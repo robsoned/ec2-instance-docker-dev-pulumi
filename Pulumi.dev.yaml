@@ -1,0 +1,7 @@
+config:
+  aws:region: us-east-1
+  ec2:ami: ami-023508951a94f0c71
+  ec2:dockerComposeVersion: v2.29.2
+  ec2:dockerVersion: 25.0.6-1.amzn2023.0.1
+  ec2:instanceType: t4g.small
+  ec2:keyPairName: dev-ec2
