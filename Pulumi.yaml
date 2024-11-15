@@ -1,0 +1,7 @@
+name: ec2-instance-docker-dev
+runtime: go
+description: Ec2 instance with docker installed
+config:
+  pulumi:tags:
+    value:
+      pulumi:template: go
