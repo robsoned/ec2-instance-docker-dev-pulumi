@@ -21,6 +21,9 @@ func CreateInstance(ctx *pulumi.Context) error {
 		KeyName:             getKeyPairName(ctx),
 		VpcSecurityGroupIds: pulumi.StringArray{securityGroup.ID()},
 		UserData:            userdata.GetInstanceUserData(ctx),
+		RootBlockDevice: &ec2.InstanceRootBlockDeviceArgs{
+			VolumeSize: pulumi.Int(30),
+		},
 	})
 
 	if err != nil {
