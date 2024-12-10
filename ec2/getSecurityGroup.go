@@ -7,6 +7,9 @@ import (
 )
 
 func getSecurityGroup(ctx *pulumi.Context) (*ec2.SecurityGroup, error) {
+
+	getSecurityGroupCidrIpv4 := getSecurityGroupCidrIpv4(ctx)
+
 	securityGroup, err := ec2.NewSecurityGroup(ctx, "securityGroup", &ec2.SecurityGroupArgs{
 		Tags: pulumi.StringMap{
 			"Name": pulumi.String("ec2-instance-docker-dev"),
@@ -17,13 +20,52 @@ func getSecurityGroup(ctx *pulumi.Context) (*ec2.SecurityGroup, error) {
 		return nil, err
 	}
 
-	_, err = vpc.NewSecurityGroupIngressRule(ctx, "securityGroupIngressRule", &vpc.SecurityGroupIngressRuleArgs{
+	_, err = vpc.NewSecurityGroupIngressRule(ctx, "securityGroupSSHIngressRule", &vpc.SecurityGroupIngressRuleArgs{
 		SecurityGroupId: securityGroup.ID(),
-		CidrIpv4:        pulumi.String("0.0.0.0/0"),
+		CidrIpv4:        getSecurityGroupCidrIpv4,
 		FromPort:        pulumi.Int(22),
 		ToPort:          pulumi.Int(22),
 		IpProtocol:      pulumi.String("tcp"),
 		Description:     pulumi.String("Allow SSH access"),
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = vpc.NewSecurityGroupIngressRule(ctx, "securityGroupHTTPIngressRule", &vpc.SecurityGroupIngressRuleArgs{
+		SecurityGroupId: securityGroup.ID(),
+		CidrIpv4:        getSecurityGroupCidrIpv4,
+		FromPort:        pulumi.Int(80),
+		ToPort:          pulumi.Int(80),
+		IpProtocol:      pulumi.String("tcp"),
+		Description:     pulumi.String("Allow HTTP access"),
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = vpc.NewSecurityGroupIngressRule(ctx, "securityGroupHTTPSIngressRule3", &vpc.SecurityGroupIngressRuleArgs{
+		SecurityGroupId: securityGroup.ID(),
+		CidrIpv4:        getSecurityGroupCidrIpv4,
+		FromPort:        pulumi.Int(443),
+		ToPort:          pulumi.Int(443),
+		IpProtocol:      pulumi.String("tcp"),
+		Description:     pulumi.String("Allow HTTPS access"),
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = vpc.NewSecurityGroupIngressRule(ctx, "securityGroupPHPMYAdminIngressRule", &vpc.SecurityGroupIngressRuleArgs{
+		SecurityGroupId: securityGroup.ID(),
+		CidrIpv4:        getSecurityGroupCidrIpv4,
+		FromPort:        pulumi.Int(9000),
+		ToPort:          pulumi.Int(9000),
+		IpProtocol:      pulumi.String("tcp"),
+		Description:     pulumi.String("Allow PHPMYAdmin access"),
 	})
 
 	if err != nil {
