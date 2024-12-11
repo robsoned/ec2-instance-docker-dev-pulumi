@@ -1,7 +1,22 @@
 config:
   aws:region: us-east-1
-  ec2:ami: ami-023508951a94f0c71
+  ec2:ami: ami-0453ec754f44f9a4a
   ec2:dockerComposeVersion: v2.29.2
   ec2:dockerVersion: 25.0.6-1.amzn2023.0.1
-  ec2:instanceType: t4g.small
+  ec2:instanceType: t3.2xlarge
   ec2:keyPairName: dev-ec2
+  ec2:securityGroupCidrIpv4: 0.0.0.0/0 #use your ip address /32, the actual configuration allows traffic from any ip address
+  ec2:ingressSecurityGroups:
+    - name: ssh
+      protocol: tcp
+      fromPort: 22
+      toPort: 22
+    - name: http
+      protocol: tcp
+      fromPort: 80
+      toPort: 80
+    - name: https
+      protocol: tcp
+      fromPort: 443
+      toPort: 443    
+    
