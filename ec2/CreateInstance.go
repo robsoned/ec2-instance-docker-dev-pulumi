@@ -22,7 +22,7 @@ func CreateInstance(ctx *pulumi.Context) error {
 		VpcSecurityGroupIds: pulumi.StringArray{securityGroup.ID()},
 		UserData:            userdata.GetInstanceUserData(ctx),
 		RootBlockDevice: &ec2.InstanceRootBlockDeviceArgs{
-			VolumeSize: pulumi.Int(30),
+			VolumeSize: pulumi.Int(100),
 		},
 	})
 

@@ -1,6 +1,8 @@
 package ec2
 
 import (
+	"ec2-instance-docker-dev/ec2/securitygroup"
+
 	"github.com/pulumi/pulumi-aws/sdk/v6/go/aws/ec2"
 	"github.com/pulumi/pulumi-aws/sdk/v6/go/aws/vpc"
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
@@ -8,7 +10,7 @@ import (
 
 func getSecurityGroup(ctx *pulumi.Context) (*ec2.SecurityGroup, error) {
 
-	getSecurityGroupCidrIpv4 := getSecurityGroupCidrIpv4(ctx)
+	securityGroupCidrIpv4 := getSecurityGroupCidrIpv4(ctx)
 
 	securityGroup, err := ec2.NewSecurityGroup(ctx, "securityGroup", &ec2.SecurityGroupArgs{
 		Tags: pulumi.StringMap{
@@ -20,53 +22,7 @@ func getSecurityGroup(ctx *pulumi.Context) (*ec2.SecurityGroup, error) {
 		return nil, err
 	}
 
-	_, err = vpc.NewSecurityGroupIngressRule(ctx, "securityGroupSSHIngressRule", &vpc.SecurityGroupIngressRuleArgs{
-		SecurityGroupId: securityGroup.ID(),
-		CidrIpv4:        getSecurityGroupCidrIpv4,
-		FromPort:        pulumi.Int(22),
-		ToPort:          pulumi.Int(22),
-		IpProtocol:      pulumi.String("tcp"),
-		Description:     pulumi.String("Allow SSH access"),
-	})
-
-	if err != nil {
-		return nil, err
-	}
-
-	_, err = vpc.NewSecurityGroupIngressRule(ctx, "securityGroupHTTPIngressRule", &vpc.SecurityGroupIngressRuleArgs{
-		SecurityGroupId: securityGroup.ID(),
-		CidrIpv4:        getSecurityGroupCidrIpv4,
-		FromPort:        pulumi.Int(80),
-		ToPort:          pulumi.Int(80),
-		IpProtocol:      pulumi.String("tcp"),
-		Description:     pulumi.String("Allow HTTP access"),
-	})
-
-	if err != nil {
-		return nil, err
-	}
-
-	_, err = vpc.NewSecurityGroupIngressRule(ctx, "securityGroupHTTPSIngressRule3", &vpc.SecurityGroupIngressRuleArgs{
-		SecurityGroupId: securityGroup.ID(),
-		CidrIpv4:        getSecurityGroupCidrIpv4,
-		FromPort:        pulumi.Int(443),
-		ToPort:          pulumi.Int(443),
-		IpProtocol:      pulumi.String("tcp"),
-		Description:     pulumi.String("Allow HTTPS access"),
-	})
-
-	if err != nil {
-		return nil, err
-	}
-
-	_, err = vpc.NewSecurityGroupIngressRule(ctx, "securityGroupPHPMYAdminIngressRule", &vpc.SecurityGroupIngressRuleArgs{
-		SecurityGroupId: securityGroup.ID(),
-		CidrIpv4:        getSecurityGroupCidrIpv4,
-		FromPort:        pulumi.Int(9000),
-		ToPort:          pulumi.Int(9000),
-		IpProtocol:      pulumi.String("tcp"),
-		Description:     pulumi.String("Allow PHPMYAdmin access"),
-	})
+	err = createSecurityGroupIngresses(ctx, securityGroup.ID(), securityGroupCidrIpv4)
 
 	if err != nil {
 		return nil, err
@@ -89,5 +45,35 @@ func getSecurityGroup(ctx *pulumi.Context) (*ec2.SecurityGroup, error) {
 	}
 
 	return securityGroup, nil
+
+}
+
+func createSecurityGroupIngresses(ctx *pulumi.Context, securityGroupId pulumi.StringInput, cidrIpv4 pulumi.StringInput) error {
+
+	mappingPorts := securitygroup.GetMappingPorts(ctx)
+
+	for _, mapping := range mappingPorts {
+
+		ingressRuleName := mapping.Name + "-IngressRule"
+
+		_, err := vpc.NewSecurityGroupIngressRule(ctx, ingressRuleName, &vpc.SecurityGroupIngressRuleArgs{
+
+			SecurityGroupId: securityGroupId,
+			CidrIpv4:        cidrIpv4,
+			FromPort:        pulumi.Int(mapping.FromPort),
+			ToPort:          pulumi.Int(mapping.ToPort),
+			IpProtocol:      pulumi.String(mapping.Protocol),
+			Tags: pulumi.StringMap{
+				"Name": pulumi.String(ingressRuleName),
+			},
+		})
+
+		if err != nil {
+			return err
+		}
+
+	}
+
+	return nil
 
 }
