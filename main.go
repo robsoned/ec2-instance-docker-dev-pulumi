@@ -8,7 +8,6 @@ import (
 
 func main() {
 	pulumi.Run(func(ctx *pulumi.Context) error {
-		ec2.CreateInstance(ctx)
-		return nil
+		return ec2.CreateInstance(ctx)
 	})
 }

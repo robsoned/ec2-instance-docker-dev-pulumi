@@ -1,6 +1,7 @@
 package ec2
 
 import (
+	"ec2-instance-docker-dev/ec2/elasticIP"
 	"ec2-instance-docker-dev/ec2/userdata"
 
 	"github.com/pulumi/pulumi-aws/sdk/v6/go/aws/ec2"
@@ -9,7 +10,13 @@ import (
 
 func CreateInstance(ctx *pulumi.Context) error {
 
-	securityGroup, err := getSecurityGroup(ctx)
+	elasticIp, err := elasticIP.Create(ctx, &elasticIP.CreateElasticIPArgs{})
+
+	if err != nil {
+		return err
+	}
+
+	securityGroup, err := getSecurityGroup(ctx, elasticIp.PublicIp)
 
 	if err != nil {
 		return err
@@ -30,7 +37,13 @@ func CreateInstance(ctx *pulumi.Context) error {
 		return err
 	}
 
-	ctx.Export("intance-ip", ec2Instance.PublicIp)
+	err = elasticIP.CreateEipAssociation(ctx, ec2Instance.ID().ToStringOutput(), elasticIp.AllocationId)
+
+	if err != nil {
+		return err
+	}
+
+	ctx.Export("elastic-ip", elasticIp.PublicIp)
 
 	return nil
 

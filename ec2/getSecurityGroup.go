@@ -8,7 +8,7 @@ import (
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 )
 
-func getSecurityGroup(ctx *pulumi.Context) (*ec2.SecurityGroup, error) {
+func getSecurityGroup(ctx *pulumi.Context, publicInstanceIp pulumi.StringInput) (*ec2.SecurityGroup, error) {
 
 	securityGroupCidrIpv4 := getSecurityGroupCidrIpv4(ctx)
 
@@ -22,11 +22,21 @@ func getSecurityGroup(ctx *pulumi.Context) (*ec2.SecurityGroup, error) {
 		return nil, err
 	}
 
-	err = createSecurityGroupIngresses(ctx, securityGroup.ID(), securityGroupCidrIpv4)
+	err = createSecurityGroupIngresses(ctx, securityGroup.ID(), securityGroupCidrIpv4, "customIp")
 
 	if err != nil {
 		return nil, err
 	}
+
+	publicInstanceIp.ToStringOutput().ApplyT(func(ip string) error {
+
+		selfSecurityGroupCidrIpv4 := ip + "/32"
+
+		err = createSecurityGroupIngresses(ctx, securityGroup.ID(), pulumi.String(selfSecurityGroupCidrIpv4), "self")
+
+		return err
+
+	})
 
 	_, err = vpc.NewSecurityGroupEgressRule(
 		ctx,
@@ -48,13 +58,13 @@ func getSecurityGroup(ctx *pulumi.Context) (*ec2.SecurityGroup, error) {
 
 }
 
-func createSecurityGroupIngresses(ctx *pulumi.Context, securityGroupId pulumi.StringInput, cidrIpv4 pulumi.StringInput) error {
+func createSecurityGroupIngresses(ctx *pulumi.Context, securityGroupId pulumi.StringInput, cidrIpv4 pulumi.StringInput, name string) error {
 
 	mappingPorts := securitygroup.GetMappingPorts(ctx)
 
 	for _, mapping := range mappingPorts {
 
-		ingressRuleName := mapping.Name + "-IngressRule"
+		ingressRuleName := mapping.Name + "-" + name + "-IngressRule"
 
 		_, err := vpc.NewSecurityGroupIngressRule(ctx, ingressRuleName, &vpc.SecurityGroupIngressRuleArgs{
 
@@ -75,5 +85,4 @@ func createSecurityGroupIngresses(ctx *pulumi.Context, securityGroupId pulumi.St
 	}
 
 	return nil
-
 }
