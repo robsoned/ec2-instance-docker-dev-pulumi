@@ -16,50 +16,19 @@ func GetInstanceUserData(ctx *pulumi.Context) pulumi.String {
 set -e
 
 HOME=/home/ec2-user
-EBS_VOLUME_DEVICE_NAME=/dev/sdh
-EBS_VOLUME_FOLDER=ebs-volume
-MAX_RETRIES=10
-RETRY_INTERVAL=10
 
-# Wait for the EBS volume to exist
-for i in $(seq 1 $MAX_RETRIES); do
-  if [ -b $EBS_VOLUME_DEVICE_NAME ]; then
-    echo "EBS volume $EBS_VOLUME_DEVICE_NAME is now available."
-    break
-  fi
 
-  echo "Waiting for EBS volume $EBS_VOLUME_DEVICE_NAME to become available... (attempt $i/$MAX_RETRIES)"
-  sleep $RETRY_INTERVAL
-done
+MOUNT_VOLUME_BINARY_URL=https://github.com/robsoned/mount-ebs-volume-ec2-user-data/releases/download/0.0.2/mount-ebs-volume-ec2-user-data-0.0.2-linux-amd64.tar.gz
 
-# Check if the volume is already mounted
-if grep -qs $EBS_VOLUME_DEVICE_NAME /proc/mounts; then
-  echo "Volume already mounted"
-  exit 0
-fi
+curl -L $MOUNT_VOLUME_BINARY_URL -o /tmp/mount-ebs-volume-ec2-user-data.tar.gz && \
+tar -xzf /tmp/mount-ebs-volume-ec2-user-data.tar.gz -C /tmp 
 
-# Check if the filesystem already exists
-if ! blkid $EBS_VOLUME_DEVICE_NAME; then
-  mkfs -t ext4 $EBS_VOLUME_DEVICE_NAME
-else
-  # Check if the filesystem is valid
-  if ! fsck -n $EBS_VOLUME_DEVICE_NAME; then
-    echo "Invalid filesystem detected. Creating a new filesystem..."
-    mkfs -t ext4 $EBS_VOLUME_DEVICE_NAME
-  fi
-fi
-
-mkdir -p $HOME/$EBS_VOLUME_FOLDER
-
-# Check if the mount point is already in use
-if mountpoint -q $HOME/$EBS_VOLUME_FOLDER; then
-  echo "Mount point already in use"
-  exit 0
-elif ! mount $EBS_VOLUME_DEVICE_NAME $HOME/$EBS_VOLUME_FOLDER; then
-  echo "Failed to mount the volume. Checking filesystem..."
-  fsck -y $EBS_VOLUME_DEVICE_NAME
-  mount $EBS_VOLUME_DEVICE_NAME $HOME/$EBS_VOLUME_FOLDER
-fi
+EBS_VOLUME_DEVICE_NAME=/dev/sdh \
+EBS_VOLUME_FOLDER=ebs-volume \
+WAIT_EBS_VOLUME_FOLDER_RETRTY_INTERVAL=10 \
+WAIT_EBS_VOLUME_FOLDER_MAX_RETRY=10 \
+EBS_FOLDER_PATH=${HOME}/$EBS_VOLUME_FOLDER \
+/tmp/mount-ebs-volume-ec2-user-data
 
 chown -R ec2-user:ec2-user $HOME/$EBS_VOLUME_FOLDER
 
