@@ -8,7 +8,7 @@ import (
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 )
 
-func CreateInstance(ctx *pulumi.Context) (*ec2.Instance, error) {
+func CreateInstance(ctx *pulumi.Context, availabilityZone *pulumi.StringInput) (*ec2.Instance, error) {
 
 	elasticIp, err := elasticIP.Create(ctx, &elasticIP.CreateElasticIPArgs{})
 
@@ -22,7 +22,7 @@ func CreateInstance(ctx *pulumi.Context) (*ec2.Instance, error) {
 		return nil, err
 	}
 
-	ec2Instance, err := ec2.NewInstance(ctx, "ec2-instance", &ec2.InstanceArgs{
+	ec2InstaceArgs := &ec2.InstanceArgs{
 		Ami:                 getAmi(ctx),
 		InstanceType:        getInstancetype(ctx),
 		KeyName:             getKeyPairName(ctx),
@@ -31,7 +31,13 @@ func CreateInstance(ctx *pulumi.Context) (*ec2.Instance, error) {
 		RootBlockDevice: &ec2.InstanceRootBlockDeviceArgs{
 			VolumeSize: pulumi.Int(100),
 		},
-	})
+	}
+
+	if availabilityZone != nil {
+		ec2InstaceArgs.AvailabilityZone = *availabilityZone
+	}
+
+	ec2Instance, err := ec2.NewInstance(ctx, "ec2-instance", ec2InstaceArgs)
 
 	if err != nil {
 		return nil, err
