@@ -42,7 +42,14 @@ curl -L "https://github.com/docker/compose/releases/download/%s/docker-compose-$
 chmod +x /usr/local/bin/docker-compose && \
 service docker start && \
 # login to docker registry
-su ec2-user -c 'echo "%s" | docker login %s -u %s --password-stdin' && \
+su ec2-user -c 'echo "%s" | docker login %s -u %s --password-stdin'
+
+# Configure docker volume to store data in EBS volume
+
+echo "{
+  \"data-root\": \"${EBS_FOLDER_PATH}/docker-data\"
+}" | tee /etc/docker/daemon.json
+
 service docker restart && \
 echo "ClientAliveInterval 60" | tee -a /etc/ssh/sshd_config && \
 systemctl restart sshd
