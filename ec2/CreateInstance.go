@@ -1,6 +1,7 @@
 package ec2
 
 import (
+	"ec2-instance-docker-dev/ebs"
 	"ec2-instance-docker-dev/ec2/elasticIP"
 	"ec2-instance-docker-dev/ec2/userdata"
 
@@ -8,7 +9,7 @@ import (
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 )
 
-func CreateInstance(ctx *pulumi.Context, availabilityZone *pulumi.StringInput) (*ec2.Instance, error) {
+func CreateInstance(ctx *pulumi.Context, volume *ebs.SearchVolumeOutput) (*ec2.Instance, error) {
 
 	elasticIp, err := elasticIP.Create(ctx, &elasticIP.CreateElasticIPArgs{})
 
@@ -22,7 +23,7 @@ func CreateInstance(ctx *pulumi.Context, availabilityZone *pulumi.StringInput) (
 		return nil, err
 	}
 
-	ec2InstaceArgs := &ec2.InstanceArgs{
+	ec2InstanceArgs := &ec2.InstanceArgs{
 		Ami:                 getAmi(ctx),
 		InstanceType:        getInstancetype(ctx),
 		KeyName:             getKeyPairName(ctx),
@@ -33,11 +34,12 @@ func CreateInstance(ctx *pulumi.Context, availabilityZone *pulumi.StringInput) (
 		},
 	}
 
-	if availabilityZone != nil {
-		ec2InstaceArgs.AvailabilityZone = *availabilityZone
+	if volume != nil {
+		ctx.Log.Info("Creating instance in the same availability zone as the volume", nil)
+		ec2InstanceArgs.AvailabilityZone = pulumi.String(volume.AvailabilityZone)
 	}
 
-	ec2Instance, err := ec2.NewInstance(ctx, "ec2-instance", ec2InstaceArgs)
+	ec2Instance, err := ec2.NewInstance(ctx, "ec2-instance", ec2InstanceArgs)
 
 	if err != nil {
 		return nil, err

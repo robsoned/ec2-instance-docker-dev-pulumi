@@ -6,7 +6,7 @@ import (
 )
 
 type SearchVolumeOutput struct {
-	Id               string
+	ID               string
 	AvailabilityZone string
 }
 
@@ -63,7 +63,7 @@ func SearchVolume(ctx *pulumi.Context) (*SearchVolumeOutput, error) {
 	ctx.Log.Info("Volume found", nil)
 
 	return &SearchVolumeOutput{
-		Id:               volume.Id,
+		ID:               volume.Id,
 		AvailabilityZone: volume.AvailabilityZone,
 	}, nil
 
