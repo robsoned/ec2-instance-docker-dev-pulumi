@@ -44,6 +44,5 @@ func main() {
 		}
 
 		return nil
-
 	})
 }
