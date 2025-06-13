@@ -10,28 +10,28 @@ import (
 func main() {
 	pulumi.Run(func(ctx *pulumi.Context) error {
 
-		ec2Instance, err := ec2.CreateInstance(ctx)
+		retainedVolume, err := ebs.SearchVolume(ctx)
 
 		if err != nil {
+			ctx.Log.Error("Error searching for existing volume", nil)
 			return err
 		}
 
-		instanceAvailabilityZone := ec2Instance.AvailabilityZone
-
-		retainedVolumeID, err := ebs.SearchVolume(ctx)
+		ec2Instance, err := ec2.CreateInstance(ctx, retainedVolume)
 
 		if err != nil {
+			ctx.Log.Error("Error creating EC2 instance", nil)
 			return err
 		}
 
-		if retainedVolumeID != "" {
+		if retainedVolume != nil {
 			ctx.Log.Info("Volume found, new volume will not be created", nil)
-			_, err = ec2.CreateVolumeAttachment(ctx, pulumi.String(retainedVolumeID), ec2Instance)
+			_, err = ec2.CreateVolumeAttachment(ctx, pulumi.String(retainedVolume.ID), ec2Instance)
 
 			return err
 		}
 
-		volume, err := ebs.CreateVolume(ctx, instanceAvailabilityZone)
+		volume, err := ebs.CreateVolume(ctx, ec2Instance.AvailabilityZone)
 
 		if err != nil {
 			return err

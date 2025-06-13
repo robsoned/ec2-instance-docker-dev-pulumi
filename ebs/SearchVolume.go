@@ -5,7 +5,12 @@ import (
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 )
 
-func SearchVolume(ctx *pulumi.Context) (string, error) {
+type SearchVolumeOutput struct {
+	ID               string
+	AvailabilityZone string
+}
+
+func SearchVolume(ctx *pulumi.Context) (*SearchVolumeOutput, error) {
 
 	ctx.Log.Info("Searching for existing volume", nil)
 	volumesSearchResult, err := ebs.GetEbsVolumes(ctx, &ebs.GetEbsVolumesArgs{
@@ -18,15 +23,15 @@ func SearchVolume(ctx *pulumi.Context) (string, error) {
 
 	if err != nil {
 		ctx.Log.Error("Error searching for volume", nil)
-		return "", err
+		return nil, err
 	}
 
 	if len(volumesSearchResult.Ids) == 0 {
 		ctx.Log.Info("Volume not found", nil)
-		return "", nil
+		return nil, nil
 	}
 
-	ctx.Log.Info("Volume found, getting the volume resoruce", nil)
+	ctx.Log.Info("Volume found, getting the volume resource", nil)
 
 	volume, err := ebs.LookupVolume(ctx, &ebs.LookupVolumeArgs{
 		Filters: []ebs.GetVolumeFilter{
@@ -52,11 +57,14 @@ func SearchVolume(ctx *pulumi.Context) (string, error) {
 
 	if err != nil {
 		ctx.Log.Error("Error getting volume resource", nil)
-		return "", err
+		return nil, err
 	}
 
 	ctx.Log.Info("Volume found", nil)
 
-	return volume.Id, nil
+	return &SearchVolumeOutput{
+		ID:               volume.Id,
+		AvailabilityZone: volume.AvailabilityZone,
+	}, nil
 
 }
