@@ -28,6 +28,7 @@ func CreateVolume(ctx *pulumi.Context, availabilityZone pulumi.StringInput) (*eb
 	volume, err := ebs.NewVolume(ctx, pulumiEBSName, &ebs.VolumeArgs{
 		AvailabilityZone: availabilityZone,
 		Size:             volumeSize,
+		Type:             pulumi.String("gp3"),
 		Tags: pulumi.StringMap{
 			"Name":           pulumi.String(pulumiEBSName),
 			pulumiProjectTag: pulumi.String(ctx.Project()),
