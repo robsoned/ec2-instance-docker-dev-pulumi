@@ -34,7 +34,7 @@ EBS_FOLDER_PATH=${EBS_FOLDER_PATH} \
 EBS_VOLUME_FOLDER=${EBS_VOLUME_FOLDER} \
 mount-ebs-volume-ec2-user-data
 
-chown -R ec2-user:ec2-user ${EBS_FOLDER_PATH}
+find "${EBS_FOLDER_PATH}" -path "${EBS_FOLDER_PATH}/docker-data" -prune -o -exec chown ec2-user:ec2-user {} +
 
 # Add the EBS volume to fstab for automatic mounting on boot
 # Get the UUID of the mounted device (device should be available since mount was successful)
@@ -76,7 +76,6 @@ echo "{
 }" | tee /etc/docker/daemon.json
 
 mkdir -p ${EBS_FOLDER_PATH}/docker-data && \
-chown -R root:root ${EBS_FOLDER_PATH}/docker-data
 
 service docker restart && \
 echo "ClientAliveInterval 60" | tee -a /etc/ssh/sshd_config && \
