@@ -34,8 +34,6 @@ EBS_FOLDER_PATH=${EBS_FOLDER_PATH} \
 EBS_VOLUME_FOLDER=${EBS_VOLUME_FOLDER} \
 mount-ebs-volume-ec2-user-data
 
-find "${EBS_FOLDER_PATH}" -path "${EBS_FOLDER_PATH}/docker-data" -prune -o -exec chown ec2-user:ec2-user {} +
-
 # Add the EBS volume to fstab for automatic mounting on boot
 # Get the UUID of the mounted device (device should be available since mount was successful)
 EBS_VOLUME_UUID=$(blkid -s UUID -o value "${EBS_VOLUME_DEVICE_NAME}" 2>/dev/null | head -n1 | tr -d '\n\r')
