@@ -50,31 +50,29 @@
 
 ## Security Considerations
 
+> **Context:** This EC2 instance is used exclusively for **development purposes**. Production hardening (strict egress rules, IAM least-privilege, secret rotation SLAs, CrossGuard policies) is intentionally out of scope. Concerns below are scoped to what matters in a dev environment.
+
 **Docker registry password embedded in plaintext user-data:**
-- Risk: `GetInstanceUserData` uses `fmt.Sprintf` to interpolate `registryConfig.Password` directly into the bash cloud-init script. AWS EC2 user-data is stored in instance metadata and retrievable by anyone with `ec2:DescribeInstanceAttribute` permission, or from within the instance itself at `http://169.254.169.254/latest/user-data`.
+- Risk: `GetInstanceUserData` uses `fmt.Sprintf` to interpolate `registryConfig.Password` directly into the bash cloud-init script. AWS EC2 user-data is retrievable from within the instance at `http://169.254.169.254/latest/user-data`, and by any IAM principal with `ec2:DescribeInstanceAttribute`.
 - Files: `ec2/userdata/GetInstanceUserData.go:68`, `ec2/docker/GetRegistryAuthentication.go`
 - Current mitigation: Pulumi config encrypts the secret at rest in `Pulumi.*.yaml` (via `secure:` key). The value is only decrypted at apply time — but is then written in cleartext to the EC2 user-data payload.
-- Recommendations:
-  1. Use AWS Secrets Manager or SSM Parameter Store (SecureString). Store the ARN in Pulumi config, and fetch the secret inside the user-data script via `aws ssm get-parameter --with-decryption`.
-  2. Restrict the EC2 instance IAM role to only the required secret ARN.
+- Dev-appropriate recommendation: Acceptable as-is for a single-developer dev box. If the team grows or the registry credential has broad write access, consider fetching via SSM Parameter Store in the user-data script instead of embedding directly.
 
-**`Pulumi.*.yaml` excluded from git but no documented secret rotation process:**
-- Risk: Stack config files (containing encrypted secrets) are gitignored (`Pulumi.*.yaml`). There is no guidance in the README for secret rotation or what to do when a Pulumi passphrase is compromised.
+**`Pulumi.*.yaml` excluded from git but no documented recovery process:**
+- Risk: Stack config files (containing encrypted secrets) are gitignored (`Pulumi.*.yaml`). Loss of the Pulumi passphrase means the encrypted secrets cannot be recovered without redeploying from scratch.
 - Files: `.gitignore:1`, `Readme.md`
 - Current mitigation: Files are not committed.
-- Recommendations: Document the secret rotation procedure and the Pulumi passphrase storage location (e.g., team password manager).
+- Recommendation: Document where the Pulumi passphrase is stored (e.g., team password manager) so any developer can redeploy the stack.
 
-**Overly broad security group CIDR in README example:**
-- Risk: The documented example for `ec2:securityGroupCidrIpv4` uses `0.0.0.0/0`, which opens all configured ingress ports (including SSH port 22) to the entire internet.
+**Overly broad security group CIDR (`0.0.0.0/0`) in README example:**
+- Risk: The documented example uses `0.0.0.0/0` for `ec2:securityGroupCidrIpv4`, exposing SSH (port 22) to the internet.
 - Files: `Readme.md:52`, `ec2/getSecurityGroupCidrIpv4.go`
-- Current mitigation: None enforced in code; it is a config value.
-- Recommendations: Add a Pulumi policy-as-code check (CrossGuard) that blocks `0.0.0.0/0` on port 22, or document a required IP restriction.
+- Context: For a dev instance this is a usability trade-off (access from any network). Acceptable if the SSH key is strong and rotated periodically.
+- Recommendation: Document that users should restrict to their own IP/CIDR where possible, even for dev use.
 
-**Egress rule allows all traffic:**
-- Risk: The security group egress rule allows all outbound traffic (`0.0.0.0/0`, protocol `-1`, ports 0-0).
+**Egress rule allows all outbound traffic — intentional for dev:**
 - Files: `ec2/getSecurityGroup.go:41-51`
-- Current mitigation: This is standard practice for development environments, but increases blast radius if the instance is compromised.
-- Recommendations: For production hardening, restrict egress to known endpoints (e.g., registry server, package repos, SSM endpoint).
+- Context: Unrestricted egress is expected and appropriate for a development environment (package installs, Docker pulls, arbitrary tooling). No action needed.
 
 ---
 
