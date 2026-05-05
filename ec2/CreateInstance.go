@@ -3,6 +3,7 @@ package ec2
 import (
 	"ec2-instance-docker-dev/ebs"
 	"ec2-instance-docker-dev/ec2/elasticIP"
+	"ec2-instance-docker-dev/ec2/iam"
 	"ec2-instance-docker-dev/ec2/userdata"
 
 	"github.com/pulumi/pulumi-aws/sdk/v6/go/aws/ec2"
@@ -10,6 +11,11 @@ import (
 )
 
 func CreateInstance(ctx *pulumi.Context, volume *ebs.SearchVolumeOutput) (*ec2.Instance, error) {
+
+	iamOutput, err := iam.CreateRole(ctx)
+	if err != nil {
+		return nil, err
+	}
 
 	elasticIp, err := elasticIP.Create(ctx, &elasticIP.CreateElasticIPArgs{})
 
@@ -37,6 +43,10 @@ func CreateInstance(ctx *pulumi.Context, volume *ebs.SearchVolumeOutput) (*ec2.I
 	if volume != nil {
 		ctx.Log.Info("Creating instance in the same availability zone as the volume", nil)
 		ec2InstanceArgs.AvailabilityZone = pulumi.String(volume.AvailabilityZone)
+	}
+
+	if iamOutput != nil {
+		ec2InstanceArgs.IamInstanceProfile = iamOutput.InstanceProfileName
 	}
 
 	ec2Instance, err := ec2.NewInstance(ctx, "ec2-instance", ec2InstanceArgs)
