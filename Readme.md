@@ -13,6 +13,7 @@ This project uses [Pulumi](https://www.pulumi.com/) to provision and manage an A
 - **Security Group Configuration**: Sets up security groups with customizable ingress/egress rules
 - **Docker Registry Authentication**: Configures Docker registry access for private container images
 - **Docker Data Storage on EBS**: Configures Docker to store container data on the persistent EBS volume
+- **IAM Role & Instance Profile**: Optionally creates an IAM role with managed policy attachments and associates it with the instance at launch
 
 ## Prerequisites
 
@@ -32,6 +33,7 @@ This project uses [Pulumi](https://www.pulumi.com/) to provision and manage an A
 └── ec2/                       # EC2 instance and related resource functions
     ├── docker/                # Docker-related configurations
     ├── elasticIP/             # Elastic IP address functions
+    ├── iam/                   # IAM role and instance profile management
     ├── securitygroup/         # Security group management
     └── userdata/              # User data scripts for instance initialization
 ```
@@ -52,6 +54,21 @@ The following configuration variables can be set in `Pulumi.dev.yaml`:
 | ec2:securityGroupCidrIpv4 | IP CIDR block for security group | `0.0.0.0/0` |
 | ec2:ingressSecurityGroups | Security group ingress rules | See example below |
 | ec2:dockerRegistry | Docker registry credentials | See example below |
+| ec2:iamPolicies | JSON array of policy names or full ARNs to attach to the instance role | See example below |
+
+### IAM Role Configuration (optional)
+
+When `ec2:iamPolicies` is set, Pulumi creates an IAM role with an EC2 trust policy, an instance profile, and attaches the specified policies. The instance launches with the profile attached.
+
+Each entry in the array can be either:
+- **Short name** (AWS managed policies): `"AmazonEKSFullAccess"` — ARN is derived automatically as `arn:aws:iam::aws:policy/{name}`
+- **Full ARN** (customer-managed or cross-account policies): `"arn:aws:iam::123456789012:policy/MyCustomPolicy"`
+
+```yaml
+ec2:iamPolicies: '["AmazonEKSFullAccess","AmazonEC2FullAccess","IAMFullAccess","AutoScalingFullAccess","arn:aws:iam::123456789012:policy/EKSDevFull"]'
+```
+
+To add or remove policies, update the array and run `pulumi up`. To remove the role entirely, delete the config key and run `pulumi up`.
 
 ### Volume Management
 
