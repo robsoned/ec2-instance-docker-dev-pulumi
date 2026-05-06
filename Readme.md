@@ -13,6 +13,7 @@ This project uses [Pulumi](https://www.pulumi.com/) to provision and manage an A
 - **Security Group Configuration**: Sets up security groups with customizable ingress/egress rules
 - **Docker Registry Authentication**: Configures Docker registry access for private container images
 - **Docker Data Storage on EBS**: Configures Docker to store container data on the persistent EBS volume
+- **IAM Role & Instance Profile**: Optionally creates an IAM role with managed policy attachments and associates it with the instance at launch
 
 ## Prerequisites
 
@@ -32,6 +33,7 @@ This project uses [Pulumi](https://www.pulumi.com/) to provision and manage an A
 └── ec2/                       # EC2 instance and related resource functions
     ├── docker/                # Docker-related configurations
     ├── elasticIP/             # Elastic IP address functions
+    ├── iam/                   # IAM role and instance profile management
     ├── securitygroup/         # Security group management
     └── userdata/              # User data scripts for instance initialization
 ```
@@ -52,6 +54,19 @@ The following configuration variables can be set in `Pulumi.dev.yaml`:
 | ec2:securityGroupCidrIpv4 | IP CIDR block for security group | `0.0.0.0/0` |
 | ec2:ingressSecurityGroups | Security group ingress rules | See example below |
 | ec2:dockerRegistry | Docker registry credentials | See example below |
+| ec2:iamPolicies | JSON array of AWS managed policy short names to attach to the instance role | See example below |
+
+### IAM Role Configuration (optional)
+
+When `ec2:iamPolicies` is set, Pulumi creates an IAM role with an EC2 trust policy, an instance profile, and attaches the specified AWS managed policies. The instance launches with the profile attached.
+
+Policy names are short names (not ARNs) — the ARN is derived automatically as `arn:aws:iam::aws:policy/{name}`.
+
+```yaml
+ec2:iamPolicies: '["AmazonEKSClusterPolicy","AmazonEC2FullAccess","IAMFullAccess","AutoScalingFullAccess"]'
+```
+
+To add or remove policies, update the array and run `pulumi up`. To remove the role entirely, delete the config key and run `pulumi up`.
 
 ### Volume Management
 
