@@ -54,16 +54,18 @@ The following configuration variables can be set in `Pulumi.dev.yaml`:
 | ec2:securityGroupCidrIpv4 | IP CIDR block for security group | `0.0.0.0/0` |
 | ec2:ingressSecurityGroups | Security group ingress rules | See example below |
 | ec2:dockerRegistry | Docker registry credentials | See example below |
-| ec2:iamPolicies | JSON array of AWS managed policy short names to attach to the instance role | See example below |
+| ec2:iamPolicies | JSON array of policy names or full ARNs to attach to the instance role | See example below |
 
 ### IAM Role Configuration (optional)
 
-When `ec2:iamPolicies` is set, Pulumi creates an IAM role with an EC2 trust policy, an instance profile, and attaches the specified AWS managed policies. The instance launches with the profile attached.
+When `ec2:iamPolicies` is set, Pulumi creates an IAM role with an EC2 trust policy, an instance profile, and attaches the specified policies. The instance launches with the profile attached.
 
-Policy names are short names (not ARNs) — the ARN is derived automatically as `arn:aws:iam::aws:policy/{name}`.
+Each entry in the array can be either:
+- **Short name** (AWS managed policies): `"AmazonEKSFullAccess"` — ARN is derived automatically as `arn:aws:iam::aws:policy/{name}`
+- **Full ARN** (customer-managed or cross-account policies): `"arn:aws:iam::123456789012:policy/MyCustomPolicy"`
 
 ```yaml
-ec2:iamPolicies: '["AmazonEKSClusterPolicy","AmazonEC2FullAccess","IAMFullAccess","AutoScalingFullAccess"]'
+ec2:iamPolicies: '["AmazonEKSFullAccess","AmazonEC2FullAccess","IAMFullAccess","AutoScalingFullAccess","arn:aws:iam::123456789012:policy/EKSDevFull"]'
 ```
 
 To add or remove policies, update the array and run `pulumi up`. To remove the role entirely, delete the config key and run `pulumi up`.

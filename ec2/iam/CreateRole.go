@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"regexp"
+	"strings"
 
 	"github.com/pulumi/pulumi-aws/sdk/v6/go/aws/iam"
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
@@ -54,7 +55,12 @@ func CreateRole(ctx *pulumi.Context) (*CreateRoleOutput, error) {
 	}
 
 	for _, name := range policyNames {
-		arn := fmt.Sprintf("arn:aws:iam::aws:policy/%s", name)
+		var arn string
+		if strings.HasPrefix(name, "arn:") {
+			arn = name
+		} else {
+			arn = fmt.Sprintf("arn:aws:iam::aws:policy/%s", name)
+		}
 		resourceName := "ec2-dev-policy-" + nonAlphanumeric.ReplaceAllString(name, "-")
 		_, err := iam.NewRolePolicyAttachment(ctx, resourceName, &iam.RolePolicyAttachmentArgs{
 			Role:      role.Name,
